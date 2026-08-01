@@ -1,0 +1,44 @@
+stages:
+  prepare:
+    cmd: python -m src.data.prepare
+    deps:
+    - data/raw
+    - src/data/prepare.py
+    params:
+    - data
+    - project
+    outs:
+    - data/processed
+  train:
+    cmd: python -m src.training.train
+    deps:
+    - data/processed
+    - src/data/dataset.py
+    - src/models/classifier.py
+    - src/training/train.py
+    params:
+    - data
+    - mlflow
+    - training
+    outs:
+    - artifacts/best_model.pt
+  evaluate:
+    cmd: python -m src.evaluation.evaluate
+    deps:
+    - artifacts/best_model.pt
+    - data/processed
+    - src/data/dataset.py
+    - src/evaluation/evaluate.py
+    - src/models/classifier.py
+    params:
+    - data
+    - training
+    outs:
+    - artifacts/metrics.json
+  quality_gate:
+    cmd: python -m src.evaluation.quality_gate
+    deps:
+    - artifacts/metrics.json
+    - src/evaluation/quality_gate.py
+    params:
+    - evaluation

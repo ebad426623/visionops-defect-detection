@@ -1,0 +1,133 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python -m src.data.prepare
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: d0c4bb7754aa9cd4d857f7306d1ce482.dir
+      size: 28201919
+      nfiles: 3600
+    - path: src/data/prepare.py
+      hash: md5
+      md5: 43ecd89843d56194e203a3734712c47d
+      size: 4547
+    params:
+      params.yaml:
+        data:
+          raw_train_dir: data/raw/NEU-DET/train/images
+          raw_validation_dir: data/raw/NEU-DET/validation/images
+          processed_dir: data/processed
+          validation_fraction_from_original_validation: 0.5
+          allowed_extensions:
+          - .jpg
+        project:
+          name: visionops-defect-detection
+          seed: 42
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: f06f6909a54c5148a1eb2a66230da919.dir
+      size: 26791719
+      nfiles: 1801
+  train:
+    cmd: python -m src.training.train
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: f06f6909a54c5148a1eb2a66230da919.dir
+      size: 26791719
+      nfiles: 1801
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 8ac87a92c0a21930087b1b9c7f9a7143
+      size: 2186
+    - path: src/models/classifier.py
+      hash: md5
+      md5: 9b644602deaa118dbe00b116553f8fa3
+      size: 1099
+    - path: src/training/train.py
+      hash: md5
+      md5: e444cb59484df949ab1670c33e4f92d7
+      size: 8581
+    params:
+      params.yaml:
+        data:
+          raw_train_dir: data/raw/NEU-DET/train/images
+          raw_validation_dir: data/raw/NEU-DET/validation/images
+          processed_dir: data/processed
+          validation_fraction_from_original_validation: 0.5
+          allowed_extensions:
+          - .jpg
+        mlflow:
+          experiment_name: visionops-defect-classification
+        training:
+          batch_size: 32
+          head_epochs: 3
+          head_learning_rate: 0.001
+          finetune_epochs: 3
+          finetune_learning_rate: 0.0001
+    outs:
+    - path: artifacts/best_model.pt
+      hash: md5
+      md5: 651006a707c90f5b628cab412280a8f8
+      size: 44798219
+  evaluate:
+    cmd: python -m src.evaluation.evaluate
+    deps:
+    - path: artifacts/best_model.pt
+      hash: md5
+      md5: 651006a707c90f5b628cab412280a8f8
+      size: 44798219
+    - path: data/processed
+      hash: md5
+      md5: f06f6909a54c5148a1eb2a66230da919.dir
+      size: 26791719
+      nfiles: 1801
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 8ac87a92c0a21930087b1b9c7f9a7143
+      size: 2186
+    - path: src/evaluation/evaluate.py
+      hash: md5
+      md5: 3af632942bf8a57458f9aae14e9d35dd
+      size: 3648
+    - path: src/models/classifier.py
+      hash: md5
+      md5: 9b644602deaa118dbe00b116553f8fa3
+      size: 1099
+    params:
+      params.yaml:
+        data:
+          raw_train_dir: data/raw/NEU-DET/train/images
+          raw_validation_dir: data/raw/NEU-DET/validation/images
+          processed_dir: data/processed
+          validation_fraction_from_original_validation: 0.5
+          allowed_extensions:
+          - .jpg
+        training:
+          batch_size: 32
+          head_epochs: 3
+          head_learning_rate: 0.001
+          finetune_epochs: 3
+          finetune_learning_rate: 0.0001
+    outs:
+    - path: artifacts/metrics.json
+      hash: md5
+      md5: 465794b97e6867a4c0995eba6935d4a9
+      size: 1392
+  quality_gate:
+    cmd: python -m src.evaluation.quality_gate
+    deps:
+    - path: artifacts/metrics.json
+      hash: md5
+      md5: 465794b97e6867a4c0995eba6935d4a9
+      size: 1392
+    - path: src/evaluation/quality_gate.py
+      hash: md5
+      md5: 2a27dcbafef832bcc51b7d2c76abc454
+      size: 625
+    params:
+      params.yaml:
+        evaluation:
+          minimum_macro_f1: 0.8
