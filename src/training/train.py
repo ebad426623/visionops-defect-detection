@@ -204,7 +204,7 @@ def main() -> None:
     print(f"Trainable parameters: {count_trainable_parameters(model)}")
 
     mlflow.set_experiment(config["mlflow"]["experiment_name"])
-    with mlflow.start_run():
+    with mlflow.start_run(run_name="resnet18_head_layer4_finetune"):
         mlflow.log_params(
             {
                 "architecture": "resnet18",
