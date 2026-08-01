@@ -1,3 +1,6 @@
+from pathlib import Path
+
+import mlflow
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -88,7 +91,7 @@ def run_training_phase(
     optimizer: torch.optim.Optimizer,
     device: torch.device,
     epochs: int,
-    checkpoint_path,
+    checkpoint_path: Path,
     train_classes: list[str],
     best_validation_accuracy: float,
 ) -> float:
@@ -116,6 +119,14 @@ def run_training_phase(
             f"val_loss={validation_loss:.4f} | "
             f"val_acc={validation_accuracy:.4f}"
         )
+        mlflow.log_metric(f"{phase_name}_train_loss", train_loss, step=epoch + 1)
+        mlflow.log_metric(f"{phase_name}_train_accuracy", train_accuracy, step=epoch + 1)
+        mlflow.log_metric(f"{phase_name}_val_loss", validation_loss, step=epoch + 1)
+        mlflow.log_metric(
+            f"{phase_name}_val_accuracy",
+            validation_accuracy,
+            step=epoch + 1,
+        )
 
         if validation_accuracy > best_validation_accuracy:
             best_validation_accuracy = validation_accuracy
@@ -129,6 +140,7 @@ def run_training_phase(
                 },
                 checkpoint_path,
             )
+            mlflow.log_metric("best_validation_accuracy", best_validation_accuracy)
             print(f"Saved new best model: {checkpoint_path}")
 
     return best_validation_accuracy
@@ -191,40 +203,68 @@ def main() -> None:
     print(f"Validation images: {len(validation_dataset)}")
     print(f"Trainable parameters: {count_trainable_parameters(model)}")
 
-    best_validation_accuracy = run_training_phase(
-        phase_name="head",
-        model=model,
-        train_loader=train_loader,
-        validation_loader=validation_loader,
-        criterion=criterion,
-        optimizer=optimizer,
-        device=device,
-        epochs=head_epochs,
-        checkpoint_path=checkpoint_path,
-        train_classes=train_dataset.classes,
-        best_validation_accuracy=best_validation_accuracy,
-    )
+    mlflow.set_experiment(config["mlflow"]["experiment_name"])
+    with mlflow.start_run():
+        mlflow.log_params(
+            {
+                "architecture": "resnet18",
+                "num_classes": len(train_dataset.classes),
+                "image_size": image_size,
+                "batch_size": batch_size,
+                "head_epochs": head_epochs,
+                "head_learning_rate": head_learning_rate,
+                "finetune_epochs": finetune_epochs,
+                "finetune_learning_rate": finetune_learning_rate,
+                "device": str(device),
+            }
+        )
 
-    unfreeze_layer4(model)
-    optimizer = torch.optim.Adam(
-        filter(lambda parameter: parameter.requires_grad, model.parameters()),
-        lr=finetune_learning_rate,
-    )
-    print(f"Trainable parameters after unfreezing layer4: {count_trainable_parameters(model)}")
+        best_validation_accuracy = run_training_phase(
+            phase_name="head",
+            model=model,
+            train_loader=train_loader,
+            validation_loader=validation_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            device=device,
+            epochs=head_epochs,
+            checkpoint_path=checkpoint_path,
+            train_classes=train_dataset.classes,
+            best_validation_accuracy=best_validation_accuracy,
+        )
 
-    run_training_phase(
-        phase_name="layer4_finetune",
-        model=model,
-        train_loader=train_loader,
-        validation_loader=validation_loader,
-        criterion=criterion,
-        optimizer=optimizer,
-        device=device,
-        epochs=finetune_epochs,
-        checkpoint_path=checkpoint_path,
-        train_classes=train_dataset.classes,
-        best_validation_accuracy=best_validation_accuracy,
-    )
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        print(
+            "Loaded best head checkpoint before layer4 fine-tuning: "
+            f"val_acc={checkpoint['validation_accuracy']:.4f}"
+        )
+
+        unfreeze_layer4(model)
+        optimizer = torch.optim.Adam(
+            filter(lambda parameter: parameter.requires_grad, model.parameters()),
+            lr=finetune_learning_rate,
+        )
+        print(
+            "Trainable parameters after unfreezing layer4: "
+            f"{count_trainable_parameters(model)}"
+        )
+
+        run_training_phase(
+            phase_name="layer4_finetune",
+            model=model,
+            train_loader=train_loader,
+            validation_loader=validation_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            device=device,
+            epochs=finetune_epochs,
+            checkpoint_path=checkpoint_path,
+            train_classes=train_dataset.classes,
+            best_validation_accuracy=best_validation_accuracy,
+        )
+
+        mlflow.log_artifact(checkpoint_path)
 
 
 if __name__ == "__main__":

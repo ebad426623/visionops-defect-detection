@@ -7,3 +7,5 @@
 /src/training/__pycache__
 /artifacts
 /src/evaluation/__pycache__
+/mlruns
+mlflow.db

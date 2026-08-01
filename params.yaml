@@ -19,3 +19,6 @@ training:
 
 evaluation:
   minimum_macro_f1: 0.80
+
+mlflow:
+  experiment_name: visionops-defect-classification
