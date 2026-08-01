@@ -1,5 +1,9 @@
 /.vscode
-/data
+/data/downloads/
+/data/raw/
+/data/processed/
+!/data/raw.dvc
+!/data/.gitignore
 /venv
 /src/__pycache__
 /src/data/__pycache__
