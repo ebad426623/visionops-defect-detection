@@ -1,0 +1,21 @@
+project:
+  name: visionops-defect-detection
+  seed: 42
+
+data:
+  raw_train_dir: data/raw/NEU-DET/train/images
+  raw_validation_dir: data/raw/NEU-DET/validation/images
+  processed_dir: data/processed
+  validation_fraction_from_original_validation: 0.5
+  allowed_extensions:
+    - .jpg
+
+training:
+  batch_size: 32
+  head_epochs: 3
+  head_learning_rate: 0.001
+  finetune_epochs: 3
+  finetune_learning_rate: 0.0001
+
+evaluation:
+  minimum_macro_f1: 0.80

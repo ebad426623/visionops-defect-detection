@@ -1,0 +1,45 @@
+# VisionOps - Python 3.12
+#
+# Installation:
+#   python -m pip install --upgrade pip
+#
+# 1. Install CUDA-enabled PyTorch separately:
+#   pip install torch==2.7.1 torchvision==0.22.1 ^
+#     --index-url https://download.pytorch.org/whl/cu118
+#
+# 2. Install the remaining dependencies:
+#   pip install -r requirements.txt
+
+# Image processing
+Pillow>=11.0,<13.0
+numpy>=2.0,<3.0
+
+# Data preparation and evaluation
+pandas>=2.2,<3.0
+scikit-learn>=1.6,<2.0
+PyYAML>=6.0,<7.0
+matplotlib>=3.10,<4.0
+scipy>=1.15,<2.0
+
+# MLOps
+dvc>=3.60,<4.0
+mlflow>=3.0,<4.0
+
+# Model serving
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34,<1.0
+python-multipart>=0.0.20,<1.0
+pydantic>=2.10,<3.0
+
+# Monitoring and drift detection
+prometheus-client>=0.21,<1.0
+evidently>=0.7,<1.0
+
+# Testing and code quality
+pytest>=8.3,<9.0
+pytest-cov>=6.0,<8.0
+httpx>=0.28,<1.0
+ruff>=0.11,<1.0
+
+# Dataset download
+kaggle>=1.7,<2.0

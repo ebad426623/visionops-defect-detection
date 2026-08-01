@@ -1,0 +1,9 @@
+/.vscode
+/data
+/venv
+/src/__pycache__
+/src/data/__pycache__
+/src/models/__pycache__
+/src/training/__pycache__
+/artifacts
+/src/evaluation/__pycache__
