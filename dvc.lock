@@ -61,6 +61,7 @@ stages:
           - .jpg
         mlflow:
           experiment_name: visionops-defect-classification
+          registered_model_name: visionops-defect-classifier
         training:
           batch_size: 32
           head_epochs: 3
@@ -70,14 +71,14 @@ stages:
     outs:
     - path: artifacts/best_model.pt
       hash: md5
-      md5: 651006a707c90f5b628cab412280a8f8
+      md5: 6323a3552c1c7856e13f506f522126bb
       size: 44798219
   evaluate:
     cmd: python -m src.evaluation.evaluate
     deps:
     - path: artifacts/best_model.pt
       hash: md5
-      md5: 651006a707c90f5b628cab412280a8f8
+      md5: 6323a3552c1c7856e13f506f522126bb
       size: 44798219
     - path: data/processed
       hash: md5
@@ -114,14 +115,14 @@ stages:
     outs:
     - path: artifacts/metrics.json
       hash: md5
-      md5: 465794b97e6867a4c0995eba6935d4a9
+      md5: c5a46de2933311b9557c3762ccc3a917
       size: 1392
   quality_gate:
     cmd: python -m src.evaluation.quality_gate
     deps:
     - path: artifacts/metrics.json
       hash: md5
-      md5: 465794b97e6867a4c0995eba6935d4a9
+      md5: c5a46de2933311b9557c3762ccc3a917
       size: 1392
     - path: src/evaluation/quality_gate.py
       hash: md5
@@ -131,3 +132,39 @@ stages:
       params.yaml:
         evaluation:
           minimum_macro_f1: 0.8
+  register:
+    cmd: python -m src.registry.register
+    deps:
+    - path: artifacts/best_model.pt
+      hash: md5
+      md5: 6323a3552c1c7856e13f506f522126bb
+      size: 44798219
+    - path: artifacts/metrics.json
+      hash: md5
+      md5: c5a46de2933311b9557c3762ccc3a917
+      size: 1392
+    - path: src/models/classifier.py
+      hash: md5
+      md5: 9b644602deaa118dbe00b116553f8fa3
+      size: 1099
+    - path: src/registry/register.py
+      hash: md5
+      md5: 58ec06a9deae4cccb47a02b7bb958a4b
+      size: 1958
+    params:
+      params.yaml:
+        mlflow:
+          experiment_name: visionops-defect-classification
+          registered_model_name: visionops-defect-classifier
+  promote:
+    cmd: python -m src.registry.promote
+    deps:
+    - path: src/registry/promote.py
+      hash: md5
+      md5: 875595a13d78289f9192a56c13a583d2
+      size: 902
+    params:
+      params.yaml:
+        mlflow:
+          experiment_name: visionops-defect-classification
+          registered_model_name: visionops-defect-classifier

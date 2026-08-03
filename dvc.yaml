@@ -42,3 +42,18 @@ stages:
     - src/evaluation/quality_gate.py
     params:
     - evaluation
+  register:
+    cmd: python -m src.registry.register
+    deps:
+    - artifacts/best_model.pt
+    - artifacts/metrics.json
+    - src/models/classifier.py
+    - src/registry/register.py
+    params:
+    - mlflow
+  promote:
+    cmd: python -m src.registry.promote
+    deps:
+    - src/registry/promote.py
+    params:
+    - mlflow

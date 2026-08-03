@@ -22,3 +22,4 @@ evaluation:
 
 mlflow:
   experiment_name: visionops-defect-classification
+  registered_model_name: visionops-defect-classifier
