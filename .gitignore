@@ -13,3 +13,5 @@
 /src/evaluation/__pycache__
 /mlruns
 mlflow.db
+/src/registry/__pycache__
+/api/__pycache__
