@@ -6,10 +6,11 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 CHECKPOINT_PATH = Path("artifacts/best_model.pt")
-pytestmark = pytest.mark.skipif(
-    not CHECKPOINT_PATH.exists(),
-    reason="API tests require artifacts/best_model.pt",
-)
+if not CHECKPOINT_PATH.exists():
+    pytest.skip(
+        "API tests require artifacts/best_model.pt",
+        allow_module_level=True,
+    )
 
 from api.main import app
 
