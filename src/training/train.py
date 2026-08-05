@@ -9,8 +9,8 @@ from torchvision import datasets
 from src.config import PROJECT_ROOT, load_config
 from src.data.dataset import get_eval_transforms, get_train_transforms
 from src.models.classifier import (
-    create_resnet18,
     count_trainable_parameters,
+    create_resnet18,
     unfreeze_layer4,
 )
 

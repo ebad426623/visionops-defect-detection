@@ -1,13 +1,14 @@
 import json
-from io import BytesIO
 from datetime import datetime, timezone
+from io import BytesIO
 from time import perf_counter
+from typing import Annotated
 from uuid import uuid4
 
+import numpy as np
 import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
-import numpy as np
 from prometheus_client import Counter, Gauge, Histogram, generate_latest
 from pydantic import BaseModel
 from starlette.responses import Response
@@ -15,7 +16,6 @@ from starlette.responses import Response
 from src.config import PROJECT_ROOT, load_config
 from src.data.dataset import get_eval_transforms
 from src.models.classifier import create_resnet18
-
 
 app = FastAPI(title="VisionOps Defect Detection API")
 config = load_config()
@@ -112,7 +112,7 @@ def count_jsonl_records(path) -> int:
 
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)) -> dict[str, object]:
+async def predict(file: Annotated[UploadFile, File(...)]) -> dict[str, object]:
     start_time = perf_counter()
     prediction_id = str(uuid4())
     prediction_requests.inc()

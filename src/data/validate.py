@@ -1,5 +1,7 @@
 from pathlib import Path
+
 from PIL import Image
+
 from src.config import PROJECT_ROOT, load_config
 
 
@@ -25,7 +27,7 @@ def verify_images(class_dir: Path, allowed_extensions: list[str]) -> list[Path]:
             try:
                 with Image.open(path) as image:
                     image.verify()
-            except Exception:
+            except OSError:
                 bad_images.append(path)
 
     return bad_images
