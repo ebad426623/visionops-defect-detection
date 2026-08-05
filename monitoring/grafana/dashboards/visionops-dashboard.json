@@ -1,0 +1,102 @@
+{
+  "title": "VisionOps API Monitoring",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Prediction Requests",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "visionops_prediction_requests_total",
+          "legendFormat": "requests"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Prediction Errors",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "visionops_prediction_errors_total",
+          "legendFormat": "errors"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Average Confidence",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2
+        }
+      },
+      "targets": [
+        {
+          "expr": "visionops_prediction_confidence_sum / clamp_min(visionops_prediction_confidence_count, 1)",
+          "legendFormat": "confidence"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Average Latency Seconds",
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3
+        }
+      },
+      "targets": [
+        {
+          "expr": "visionops_prediction_latency_seconds_sum / clamp_min(visionops_prediction_latency_seconds_count, 1)",
+          "legendFormat": "latency"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Prediction Requests Over Time",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "rate(visionops_prediction_requests_total[1m])",
+          "legendFormat": "requests/sec"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Predicted Class Counts",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (visionops_predicted_class_total)",
+          "legendFormat": "{{class_name}}"
+        }
+      ]
+    }
+  ]
+}

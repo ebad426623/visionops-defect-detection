@@ -1,0 +1,29 @@
+services:
+  api:
+    build: .
+    container_name: visionops-api
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./artifacts:/app/artifacts
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: visionops-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: visionops-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
