@@ -16,3 +16,6 @@ mlflow.db
 /src/registry/__pycache__
 /api/__pycache__
 /tests/__pycache__
+/data/production
+/scripts/__pycache__
+/src/monitoring/__pycache__

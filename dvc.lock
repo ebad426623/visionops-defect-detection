@@ -168,3 +168,19 @@ stages:
         mlflow:
           experiment_name: visionops-defect-classification
           registered_model_name: visionops-defect-classifier
+  drift_report:
+    cmd: python -m src.monitoring.drift --last-n 180
+    deps:
+    - path: artifacts/predictions.jsonl
+      hash: md5
+      md5: afff82d81af5b36112acbb9395581c73
+      size: 77567
+    - path: src/monitoring/drift.py
+      hash: md5
+      md5: d5460894a83890aaa30085518e1ade6b
+      size: 2782
+    outs:
+    - path: artifacts/drift_report.json
+      hash: md5
+      md5: 380bf9cd98721975378d19ae4bd69f64
+      size: 559

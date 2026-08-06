@@ -57,3 +57,17 @@ stages:
     - src/registry/promote.py
     params:
     - mlflow
+  simulate_drift:
+    cmd: python -m scripts.simulate_drift
+    deps:
+    - data/processed/test
+    - scripts/simulate_drift.py
+    outs:
+    - data/production/drifted
+  drift_report:
+    cmd: python -m src.monitoring.drift --last-n 180
+    deps:
+    - artifacts/predictions.jsonl
+    - src/monitoring/drift.py
+    outs:
+    - artifacts/drift_report.json
