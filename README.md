@@ -1,8 +1,25 @@
 # VisionOps
 
-Production-style computer vision MLOps pipeline for industrial steel surface-defect classification.
+Production-style computer vision MLOps pipeline for industrial steel surface defect classification.
 
-VisionOps classifies steel surface images into six defect classes using transfer learning with ResNet18. The project is designed to show the full machine learning lifecycle around a computer vision model: data validation, reproducible training, evaluation, model quality gates, experiment tracking, model registry, containerized inference, monitoring, drift detection, and a retraining workflow.
+VisionOps classifies steel surface images into six defect classes using transfer learning with ResNet18. The project demonstrates the full machine learning lifecycle around a computer vision model: data validation, reproducible training, evaluation, model quality gates, experiment tracking, model registry, containerized inference, monitoring, drift detection, and retraining readiness.
+
+## Contents
+
+- [Project Purpose](#project-purpose)
+- [Dataset](#dataset)
+- [Reproduce This Project](#reproduce-this-project)
+- [System Design](#system-design)
+- [Current Results](#current-results)
+- [API](#api)
+- [Docker Compose](#docker-compose)
+- [DVC Pipeline](#dvc-pipeline)
+- [MLflow](#mlflow)
+- [Monitoring](#monitoring)
+- [Drift Detection](#drift-detection)
+- [Retraining](#retraining)
+- [Screenshots](#screenshots)
+- [Limitations](#limitations)
 
 ## Project Purpose
 
@@ -20,7 +37,7 @@ The project showcases practical ML engineering and MLOps skills:
 - simulating production drift and generating drift reports
 - wiring repeatable workflows with DVC and CI checks
 
-Some parts intentionally simulate production conditions locally. The goal is to show sound engineering judgment, reproducibility, and end-to-end workflow design in a focused portfolio build.
+Some parts intentionally simulate production conditions locally. The goal is to show sound engineering judgment, reproducibility, and end-to-end workflow design in a focused portfolio project.
 
 ## Problem
 
@@ -71,6 +88,81 @@ validation = 50% of original Kaggle validation split
 test       = 50% of original Kaggle validation split
 ```
 
+## Reproduce This Project
+
+Clone the repository:
+
+```powershell
+git clone https://github.com/ebad426623/visionops-defect-detection.git
+cd visionops-defect-detection
+```
+
+Create and activate a virtual environment:
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+Install dependencies:
+
+```powershell
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Commands below are shown for Windows PowerShell. On macOS or Linux, use the equivalent shell commands such as `source venv/bin/activate`, `mkdir -p`, and `mv`.
+
+Download the dataset with the Kaggle CLI. Kaggle API authentication is required before running this command.
+
+```powershell
+mkdir data\downloads
+kaggle datasets download -d kaustubhdikshit/neu-surface-defect-database -p data/downloads --unzip
+```
+
+Prepare the raw dataset folder. If Kaggle downloads a nested `NEU-DET.zip`, extract it:
+
+```powershell
+mkdir data\raw
+tar -xf data\downloads\NEU-DET.zip -C data\raw
+```
+
+If Kaggle extracts `NEU-DET` directly inside `data/downloads`, move it instead:
+
+```powershell
+mkdir data\raw
+move data\downloads\NEU-DET data\raw\NEU-DET
+```
+
+The final folder structure should be:
+
+```text
+data/raw/NEU-DET/
+  train/images/
+  validation/images/
+```
+
+Start MLflow first so DVC training runs can be tracked:
+
+```powershell
+docker compose up -d mlflow
+$env:MLFLOW_TRACKING_URI="http://127.0.0.1:5000"
+```
+
+Run the reproducible training and evaluation pipeline:
+
+```powershell
+dvc repro quality_gate
+```
+
+After training creates `artifacts/best_model.pt`, keep MLflow running and start the API and monitoring services:
+
+```powershell
+docker compose up --build api prometheus grafana
+```
+
+See the Docker Compose section for service URLs.
+
 ## System Design
 
 ```mermaid
@@ -84,14 +176,15 @@ flowchart TD
     G --> H[Quality Gate]
     H --> I[MLflow Tracking]
     H --> J[MLflow Model Registry]
-    J --> K[Champion Model]
-    K --> L[FastAPI Inference API]
-    L --> M[Prediction Logs]
-    L --> N[Prometheus Metrics]
-    N --> O[Grafana Dashboard]
-    M --> P[Drift Detection]
-    M --> Q[Feedback Log]
-    Q --> R[Manual Retraining Workflow]
+    H --> K[Best Model Checkpoint]
+    J --> L[Champion Alias Metadata]
+    K --> M[FastAPI Inference API]
+    M --> N[Prediction Logs]
+    M --> O[Prometheus Metrics]
+    O --> P[Grafana Dashboard]
+    N --> Q[Drift Detection]
+    N --> R[Feedback Log]
+    R --> S[Manual Retraining Workflow]
 ```
 
 ## Tech Stack
@@ -122,11 +215,13 @@ Phase 1: frozen backbone, train classifier head
 Phase 2: unfreeze layer4, fine-tune layer4 + classifier head
 ```
 
+ResNet18 was chosen because it is lightweight enough for local training and Docker-based serving, while still providing strong pretrained image features. The model first trains only the classifier head to adapt ImageNet features to defect classes, then fine-tunes `layer4` because it contains the highest-level visual features most relevant to the new classification task.
+
 Example test result:
 
 ```text
-test accuracy: 0.98+
-macro F1: 0.98+
+test accuracy: 0.9944
+macro F1: 0.9944
 quality gate: passed
 ```
 
@@ -136,19 +231,11 @@ Exact values are written to:
 artifacts/metrics.json
 ```
 
+The NEU dataset is small and class-balanced, so high accuracy is plausible but should not be interpreted as proof of production readiness on unseen factory data. The value of this project is the end-to-end ML workflow around the model, not only the headline metric.
+
 ## API
 
-Run locally:
-
-```powershell
-uvicorn api.main:app --reload
-```
-
-Open:
-
-```text
-http://127.0.0.1:8000/docs
-```
+The FastAPI service is started through Docker Compose. See the Docker Compose section for the API URL.
 
 Endpoints:
 
@@ -183,16 +270,11 @@ Example prediction response:
 
 ## Docker Compose
 
-Run the API, Prometheus, and Grafana:
-
-```powershell
-docker compose up --build
-```
-
 Services:
 
 ```text
 FastAPI:    http://127.0.0.1:8001/docs
+MLflow:     http://127.0.0.1:5000
 Prometheus: http://127.0.0.1:9090
 Grafana:    http://127.0.0.1:3000
 ```
@@ -206,13 +288,9 @@ password: admin
 
 ## DVC Pipeline
 
-Run the reproducible ML pipeline:
+The main reproduction command runs the pipeline through `quality_gate`.
 
-```powershell
-dvc repro
-```
-
-Current stages include:
+Stages:
 
 ```text
 prepare
@@ -225,19 +303,17 @@ simulate_drift
 drift_report
 ```
 
-## MLflow
-
-Open MLflow:
+The drift stages depend on production-style prediction logs. Run the API and send prediction requests before running:
 
 ```powershell
-mlflow ui
+dvc repro drift_report
 ```
 
-Then open:
+## MLflow
 
-```text
-http://127.0.0.1:5000
-```
+MLflow runs as part of the Docker Compose stack and is used for experiment tracking and model registry management.
+
+Before running DVC training, set `MLFLOW_TRACKING_URI` so runs are logged to the Docker MLflow server.
 
 MLflow tracks:
 
@@ -254,6 +330,8 @@ Registered model:
 ```text
 visionops-defect-classifier
 ```
+
+The FastAPI service currently loads the local checkpoint from `artifacts/best_model.pt`. The MLflow registry is used to demonstrate model versioning and champion alias management.
 
 ## Monitoring
 
@@ -312,11 +390,13 @@ predicted class distribution
 
 ## Retraining
 
-Current retraining support is a manual workflow check:
+Current retraining support is a manual readiness check:
 
 ```powershell
 python -m src.retraining.retrain
 ```
+
+The check verifies that prediction logs, feedback logs, and the current best checkpoint exist before a reviewed retraining workflow is started.
 
 The API logs:
 
