@@ -480,3 +480,7 @@ no fully automated retraining
 feedback logs do not store uploaded images
 classification only, no bounding-box detection
 ```
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
